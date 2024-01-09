@@ -1,5 +1,10 @@
 package com.example.desafiokotlin
 
+
+import android.app.Application
+import com.google.firebase.FirebaseApp
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -7,7 +12,6 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,11 +29,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+//import com.google.firebase.ktx.initialize
 import com.opencsv.CSVWriter
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+//import kotlinx.coroutines.flow.launchIn
+//import kotlinx.coroutines.flow.onEach
+//import kotlinx.coroutines.launch
 import java.io.FileWriter
 import java.io.IOException
 
@@ -48,9 +53,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContent {
-            val status by rememberUpdatedState(
-                ObserverConnectivity.observe().collectAsState(initial = observerConnectivity.Status.Unavailable)
-            )
+            val status by ObserverConnectivity.observe().collectAsState(initial = observerConnectivity.Status.Unavailable)
 
             if (::ObserverConnectivity.isInitialized) {
                 Column(
@@ -70,7 +73,7 @@ class MainActivity : AppCompatActivity() {
 
                     Text(
                         text = "Status de Conexão",
-                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                        style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
 
@@ -78,7 +81,7 @@ class MainActivity : AppCompatActivity() {
 
                     Text(
                         text = status.toString(),
-                        style = TextStyle(fontSize = 16.sp),
+                        style = TextStyle(fontSize = 18.sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -88,6 +91,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun generateCsvFile() {
+        val firestore = Firebase.firestore
+        val statusCollection = firestore.collection("DadosNetworking") // Nome da sua coleção no Firestore
         // Caminho do arquivo CSV que você deseja gerar
         val csvFilePath = getExternalFilesDir(null)?.absolutePath + "/arquivo.csv"
         Log.d("Tag", "Caminho do arquivo: $csvFilePath")
@@ -101,6 +106,8 @@ class MainActivity : AppCompatActivity() {
                 csvWriter.writeNext(arrayOf("Status de Conexão"))
                 csvWriter.writeNext(arrayOf(status.toString()))
             }
+            statusCollection.add(mapOf("DadosNetworking" to status.toString()))
+            Log.d("firebase", "Status enviado ao Firestore: $status")
 
             Log.d("foi", "Arquivo CSV gerado com sucesso em: $csvFilePath")
         } catch (e: IOException) {
